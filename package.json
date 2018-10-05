@@ -1,5 +1,5 @@
 {
-  "name": "putte-ts-db",
+  "name": "putte-node-db",
   "version": "0.9.0",
   "description": "Node Database Library",
   "main": "index.js",
