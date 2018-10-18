@@ -34,6 +34,7 @@ import {
 	DInsert,
 	DUpdate, DInto, DWith
 } from "./records";
+import SqlString from "@db/dynsql/sql-string";
 
 // Keywords
 const DB_INSERT          = "INSERT";
@@ -134,8 +135,8 @@ export class DynSQL {
 		return this;
 	}
 
-	public insert(...columns: Array<string>): DynSQL {
-		this.records.push(new DInsert(columns));
+	public insert(data: any, tableName: string): DynSQL {
+		this.records.push(new DInsert(data, tableName));
 		return this;
 	}
 
@@ -277,37 +278,48 @@ export class DynSQL {
 	////////////////////////////////////////
 	// SELECT
 
+
+	escpaeVal(value: any): string {
+		let result = value;
+
+		if (value instanceof String) {
+			value = SqlString.escape(value);
+			result = `"${value}"`;
+		}
+		else if (value instanceof Object) {
+			value = SqlString.escape(value);
+			result = `"${value}"`;
+		}
+
+		return result;
+	}
+
 	parseInsert(sql: string): string {
-		let localCounter = 0;
+		let record = this.records[0];
 
-		for (let i = 0; i < this.records.length; i++) {
-			let record = this.records[i];
+		if (!(record instanceof DInsert))
+			return sql;
 
-			if (record instanceof DInsert) {
-				const dRec: DInsert = record as DInsert;
-				let type = dRec.mySQLReplace ? DB_MYSQL_REPLACE : DB_INSERT;
+		const dRec: DInsert = record as DInsert;
+		let type = dRec.mySQLReplace ? DB_MYSQL_REPLACE : DB_INSERT;
 
-				sql = "INSERT (";
+		let colNames = new Array<string>();
+		let colValues = new Array<any>();
 
-				for (let col = 0; col < dRec.columns.length; col++) {
- 					sql += dRec.columns[col];
+		let obj = dRec.data;
 
-					if (col < dRec.columns.length-1) {
-						sql += ", ";
-					}
-				}
-
-				sql += ") VALAAUES (";
-
-				let withRec = this.records[i+1] as DWith;
-
-				for (let val = 0; val < withRec.data.length; val++) {
-
-				}
-
-				localCounter++;
+		for (let key in obj) {
+			if (obj.hasOwnProperty(key) ) {
+				colNames.push(key);
+				colValues.push(obj[key]);
 			}
-		} // end for
+		}
+
+		for (let i = 0; i < colValues.length; i++) {
+			colValues[i] = this.escpaeVal(colValues[i]);
+		}
+
+		sql = `INSERT (${colNames.join(",")}) VALUES (${colValues.join(",")})`;
 
 		return sql;
 	}

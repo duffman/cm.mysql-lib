@@ -8,10 +8,11 @@ export class DUpdate implements IDRecord {
 
 export class DInsert implements IDRecord {
 	public mySQLReplace: boolean = false;
-	public columns: Array<string>;
-	constructor(columns: Array<string>) {
-		this.columns = columns;
-	}
+
+	constructor(
+			public data: any,
+			public tableName: string
+		) {}
 }
 
 export class DWith implements IDRecord {
