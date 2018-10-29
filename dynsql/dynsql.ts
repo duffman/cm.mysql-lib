@@ -34,7 +34,8 @@ import {
 	DInsert,
 	DUpdate, DInto, DWith
 } from "./records";
-import SqlString from "@db/dynsql/sql-string";
+
+import SqlString from "./sql-string";
 
 // Keywords
 const DB_INSERT          = "INSERT";
