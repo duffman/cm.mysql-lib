@@ -22,6 +22,7 @@ import {SQLDataColumn}            from "./sql-data-column";
 import {DataPoint}                from "./data-point";
 
 export class SQLTableDataRow {
+	public isEmpty: boolean = false;
 	public obj: any;
 	public columns: Array<SQLDataColumn>;
 

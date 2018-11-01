@@ -79,6 +79,7 @@ export class DbResult implements IDbResult {
 			tableDataRow = this.result.getFirstRow()
 		} else {
 			tableDataRow = new SQLTableDataRow();
+			tableDataRow.isEmpty = true;
 		}
 
 		return tableDataRow;
