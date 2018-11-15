@@ -10,12 +10,10 @@ import { DataSheet }              from "./data-sheet";
 import { SQLTableData }           from "./sql-table-data";
 import { IDbResult }              from "./db-result";
 import { DbResult }               from "./db-result";
-import { isNullOrUndefined }      from "util";
-import { Global }                 from "../global";
-import { Logger }                 from "../logger.old.";
+import { Global }                 from "../../global";
+import { DbLogger }               from "./db-logoger";
 
 const log = console.log;
-
 
 export interface IOkPacket {
 	fieldCount: number;
@@ -77,8 +75,9 @@ export class DbManager {
 	}
 
 	public static escape(value: string): string {
-		if (isNullOrUndefined(value))
+		if (value === null || value === undefined) {
 			value = '';
+		}
 
 		value = value.replace('"', '\"');
 		value = value.replace("'", '\"');
@@ -118,10 +117,12 @@ export class DbManager {
 				queryResult.success = false;
 				queryResult.error = error;
 
+				//error code 1292
+
 				if (error.errno == 1062) {
 					//log("** Duplicate entry")
 				} else {
-					Logger.logErrorMessage("dbQuery :: Error ::", error.errno);
+					DbLogger.logErrorMessage("dbQuery :: Error ::", error.errno);
 				}
 
 				//reject(error);

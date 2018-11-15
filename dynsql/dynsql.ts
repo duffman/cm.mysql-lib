@@ -316,10 +316,10 @@ export class DynSQL {
 		}
 
 		for (let i = 0; i < colValues.length; i++) {
-			colValues[i] = this.escpaeVal(colValues[i]);
+			colValues[i] = "'" + this.escpaeVal(colValues[i]) + "'";
 		}
 
-		sql = `INSERT (${colNames.join(",")}) VALUES (${colValues.join(",")})`;
+		sql = `INSERT INTO ${dRec.tableName} (${colNames.join(",")}) VALUES (${colValues.join(",")})`;
 
 		return sql;
 	}
