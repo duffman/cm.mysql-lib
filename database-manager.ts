@@ -10,8 +10,9 @@ import { DataSheet }              from "./data-sheet";
 import { SQLTableData }           from "./sql-table-data";
 import { IDbResult }              from "./db-result";
 import { DbResult }               from "./db-result";
-import { Global }                 from "../../global";
 import { DbLogger }               from "./db-logoger";
+
+import { Global }                 from "../../global";
 
 const log = console.log;
 
@@ -82,31 +83,6 @@ export class DbManager {
 		value = value.replace('"', '\"');
 		value = value.replace("'", '\"');
 		return value;
-	}
-
-	public static mysqlRealEscapeString(str: string): string {
-		return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char) {
-			switch (char) {
-				case "\0":
-					return "\\0";
-				case "\x08":
-					return "\\b";
-				case "\x09":
-					return "\\t";
-				case "\x1a":
-					return "\\z";
-				case "\n":
-					return "\\n";
-				case "\r":
-					return "\\r";
-				case "\"":
-				case "'":
-				case "\\":
-				case "%":
-					return "\\" + char; // prepends a backslash to backslash, percent,
-										// and double/single quotes
-			}
-		});
 	}
 
 	private parseMysqlQueryResult(error, result, tableFields): Promise<IDbResult> {
