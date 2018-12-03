@@ -2,17 +2,15 @@
  * Copyright (C) Patrik Forsberg <patrik.forsberg@coldmind.com> - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
- * 2017-2018
  */
 
+import { Settings }               from "@app/zappy.app.settings";
 import * as mysql                 from "mysql";
 import { DataSheet }              from "./data-sheet";
 import { SQLTableData }           from "./sql-table-data";
 import { IDbResult }              from "./db-result";
 import { DbResult }               from "./db-result";
 import { DbLogger }               from "./db-logoger";
-
-import { Global }                 from "../../global";
 
 const log = console.log;
 
@@ -34,10 +32,10 @@ export interface IQuerySheetCallback {
 export class DbManager {
 	connection: any;
 
-	constructor (public dbHost: string = Global.Settings.Database.dbHost,
-				 public dbUser: string = Global.Settings.Database.dbUser,
-				 public dbPass: string = Global.Settings.Database.dbPass,
-				 public dbName: string = Global.Settings.Database.dbName) {
+	constructor (public dbHost: string = Settings.Database.dbHost,
+				 public dbUser: string = Settings.Database.dbUser,
+				 public dbPass: string = Settings.Database.dbPass,
+				 public dbName: string = Settings.Database.dbName) {
 
 		this.connection = mysql.createConnection({
 			host: dbHost,
@@ -92,18 +90,22 @@ export class DbManager {
 			if (error) {
 				queryResult.success = false;
 				queryResult.error = error;
+				let customError = error;
 
 				//error code 1292
 
+				if (error.errno === 'ECONNREFUSED') {
+					customError = new Error("ECONNREFUSED");
+				}
 				if (error.errno == 1062) {
-					//log("** Duplicate entry")
+					customError = new Error("DUP_ENTRY");
 				} else {
 					DbLogger.logErrorMessage("dbQuery :: Error ::", error.errno);
 				}
 
-				//reject(error);
-				resolve(queryResult);
-				return;
+				reject(customError);
+				//resolve(queryResult);
+
 			} else {
 				queryResult.affectedRows = result.affectedRows;
 				queryResult.lastInsertId = result.insertId;
@@ -208,14 +210,37 @@ export class DbManager {
 		});
 	}
 
+	returnResult(): Promise<IDbResult> {
+		return new Promise((resolve, reject) => {
+		});
+	}
+
 	public dbQuery(sql: string): Promise<IDbResult> {
 		return new Promise((resolve, reject) => {
 			this.connection.query(sql, (error, result, tableFields) => {
-				this.parseMysqlQueryResult(error, result, tableFields).then((res) => {
-					resolve(res);
-				}).catch((err) => {
-					reject(err);
-				});
+
+				if (error)  {
+
+					if (error.fatal) {
+						console.trace('fatal error: ' + error.message);
+					}
+
+					reject(error);
+				} else {
+					return this.parseMysqlQueryResult(error, result, tableFields).then((res) => {
+
+						if (error) {
+							console.log("FET ERROR ::", error);
+
+						} else {
+							resolve(res);
+						}
+
+					}).catch((err) => {
+						reject(err);
+					});
+
+				}
 			});
 		});
 	}

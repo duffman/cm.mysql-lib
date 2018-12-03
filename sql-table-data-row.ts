@@ -20,6 +20,7 @@
 import { isNullOrUndefined }      from "util";
 import {SQLDataColumn}            from "./sql-data-column";
 import {DataPoint}                from "./data-point";
+import {PVarUtils} from '@putte/pvar-utils';
 
 export class SQLTableDataRow {
 	public isEmpty: boolean = false;
@@ -75,7 +76,8 @@ export class SQLTableDataRow {
 	public getValAsNum(key: string): number {
 		let value = this.getValAsStr(key);
 		if (value != null) {
-			return Number(value);
+			return parseInt(value)
+			//return Number(value);
 		}
 		return -1;
 	}
