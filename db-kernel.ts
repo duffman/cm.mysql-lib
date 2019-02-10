@@ -6,13 +6,21 @@
 
 import { Settings }               from "@app/zappy.app.settings";
 import * as mysql                 from "mysql";
-import { DataSheet }              from "./data-sheet";
+import { DataSheet }              from "./data-containers/data-sheet";
 import { SQLTableData }           from "./sql-table-data";
 import { IDbResult }              from "./db-result";
 import { DbResult }               from "./db-result";
-import { DbLogger }               from "./db-logoger";
+import { DbLogger }               from "./db-logger";
+import { Connection }             from 'mysql';
 
 const log = console.log;
+
+export interface IConnectionSettings {
+	host: string;
+	user: string;
+	password: string;
+	database: string;
+}
 
 export interface IOkPacket {
 	fieldCount: number;
@@ -25,53 +33,57 @@ export interface IOkPacket {
 	changedRows: number;
 }
 
+enum DbState {
+	Unset,
+	Connected,
+	Disconnected
+}
+
 export interface IQuerySheetCallback {
 	(sheet: DataSheet);
 }
 
 export class DbManager {
-	connection: any;
+	private connLost: boolean = false;
 
 	constructor (public dbHost: string = Settings.Database.dbHost,
 				 public dbUser: string = Settings.Database.dbUser,
 				 public dbPass: string = Settings.Database.dbPass,
-				 public dbName: string = Settings.Database.dbName) {
-
-		this.connection = mysql.createConnection({
-			host: dbHost,
-			user: dbUser,
-			password: dbPass,
-			database: dbName
-		});
+				 public dbName: string = Settings.Database.dbName,
+				 public tag: string = "NO_TAG") {
 	}
 
-	public static getInstance(): DbManager {
-		let dbManager = new DbManager();
-		dbManager.open();
-		return dbManager;
+	public createConnection(openConnection: boolean = true): Connection {
+		let conn: Connection;
+
+		try {
+			conn = mysql.createConnection({
+				host: this.dbHost,
+				user: this.dbUser,
+				password: this.dbPass,
+				database: this.dbName
+			});
+
+			conn.on("error", (err) => {
+				console.log("FAT FET FUCK::: TAG ==");
+
+				if (err.code == 'PROTOCOL_CONNECTION_LOST') {
+					console.log("FAT FET FUCK -- LOST --:::", err);
+					this.connLost = true;
+				}
+			});
+
+			if (openConnection) {
+				conn.connect();
+			}
+		}
+		catch (ex) {
+			console.log("createConnection :: ERROR ::", ex);
+		}
+
+		return conn;
 	}
 
-	public open() {
-		this.connection.connect();
-	}
-
-	public close() {
-		this.connection.end();
-	}
-
-	public query(sql: string, callback: IQuerySheetCallback): void {
-		let dataSheet: DataSheet = new DataSheet();
-
-		this.connection.connect();
-
-		this.connection.query(sql, (error: any, result: any, fields: any) => {
-			this.connection.end();
-			if (error) throw error;
-
-			dataSheet.parseFields(fields);
-			callback(dataSheet);
-		});
-	}
 
 	public static escape(value: string): string {
 		if (value === null || value === undefined) {
@@ -123,12 +135,13 @@ export class DbManager {
 
 	public runInTransaction(sql: string): Promise<IDbResult> {
 		let scope = this;
+		let subConn = this.createConnection();
 		let result: IDbResult;
 		let executeError: Error = null;
 
 		function beginTransaction(): Promise<IOkPacket> {
 			return new Promise((resolve, reject) => {
-				scope.connection.query("START TRANSACTION", (error, result) => {
+				subConn.query("START TRANSACTION", (error, result) => {
 					if (!error) {
 						resolve(result);
 					}
@@ -141,7 +154,7 @@ export class DbManager {
 
 		function executeSql(sql: string): Promise<IDbResult> {
 			return new Promise((resolve, reject) => {
-				scope.connection.query(sql, (error, result, tableFields) => {
+				subConn.query(sql, (error, result, tableFields) => {
 					scope.parseMysqlQueryResult(error, result, tableFields).then((res) => {
 						resolve(res);
 					}).catch((err) => {
@@ -153,7 +166,7 @@ export class DbManager {
 
 		function commit(): Promise<boolean> {
 			return new Promise((resolve, reject) => {
-				scope.connection.query("COMMIT", (error, result) => {
+				subConn.query("COMMIT", (error, result) => {
 					console.log("error ::", error);
 					console.log("result ::", result);
 					if (!error) {
@@ -168,7 +181,7 @@ export class DbManager {
 
 		function rollback(): Promise<boolean> {
 			return new Promise((resolve, reject) => {
-				scope.connection.query("ROLLBACK", (error, result) => {
+				subConn.query("ROLLBACK", (error, result) => {
 					console.log("error ::", error);
 					console.log("result ::", result);
 					if (!error) {
@@ -210,36 +223,67 @@ export class DbManager {
 		});
 	}
 
-	returnResult(): Promise<IDbResult> {
+	/**
+	 *
+	 * @param {string} table
+	 * @param {string} where
+	 * @param {string} is
+	 * @returns {Promise<number>}
+	 */
+	public countRows(table: string, where: string, is: string): Promise<number> {
+		let countAlias = "count";
 		return new Promise((resolve, reject) => {
+			let query = `SELECT COUNT(*) AS ${countAlias} FROM ${table} WHERE ${where}${is}`;
+			this.dbQuery(query).then(res => {
+				let row = res.safeGetFirstRow();
+				let count = row.getValAsNum(countAlias);
+				resolve(count);
+
+			}).catch(err => {
+				resolve(-1);
+			})
 		});
 	}
 
 	public dbQuery(sql: string): Promise<IDbResult> {
 		return new Promise((resolve, reject) => {
-			this.connection.query(sql, (error, result, tableFields) => {
+			let conn: Connection;
 
+			try {
+				conn = this.createConnection(true);
+			}
+			catch (ex) {
+				console.log("Error Creating Connection");
+				reject(ex);
+			}
+
+			conn.query(sql, (error, result, tableFields) => {
 				if (error)  {
-
+					console.log("dbQuery ERROR ::", error);
 					if (error.fatal) {
 						console.trace('fatal error: ' + error.message);
 					}
 
+					conn.end();
 					reject(error);
+
 				} else {
 					return this.parseMysqlQueryResult(error, result, tableFields).then((res) => {
-
 						if (error) {
 							console.log("FET ERROR ::", error);
-
-						} else {
-							resolve(res);
+							throw error;
 						}
 
+						return res;
+
+					}).then((res) => {
+						conn.end();
+						resolve(res);
+
 					}).catch((err) => {
+						conn.end();
 						reject(err);
 					});
-
 				}
 			});
 		});

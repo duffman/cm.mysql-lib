@@ -17,7 +17,7 @@
  * Created by Patrik Forsberg on 2017
  */
 
-import { MySQLPacketDataTypes } from "./db-types";
+import { MySQLPacketDataTypes } from "../db-types";
 
 export class DataColumn {
 	constructor(

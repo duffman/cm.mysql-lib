@@ -1,5 +1,5 @@
 
-import {SQLTableData} from "./sql-table-data";
+import { SQLTableData } from "./sql-table-data";
 
 export class QueryResult {
 	constructor(

@@ -17,10 +17,9 @@
  * Created by Patrik Forsberg on 2017
  */
 
-import { isNullOrUndefined }      from "util";
-import {SQLDataColumn}            from "./sql-data-column";
-import {DataPoint}                from "./data-point";
-import {PVarUtils} from '@putte/pvar-utils';
+import { SQLDataColumn }          from "./sql-data-column";
+import { DataPoint }              from "./data-point";
+import { DbVarUtils }             from './data/var-utils';
 
 export class SQLTableDataRow {
 	public isEmpty: boolean = false;
@@ -29,7 +28,7 @@ export class SQLTableDataRow {
 
 	constructor(obj?: any) {
 		this.columns = new Array<SQLDataColumn>();
-		if (!isNullOrUndefined(obj)) {
+		if (!DbVarUtils.isDefined(obj)) {
 			this.parseData(obj);
 		}
 	}

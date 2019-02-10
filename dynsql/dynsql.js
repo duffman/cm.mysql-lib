@@ -228,7 +228,7 @@ var DynSQL = /** @class */ (function () {
         var sql = "";
         /**
          * Iterate the array on loopback for each type, that´s the most system
-         * efficient and readable, don´t get confused by compiler masturbations
+         * efficient and readable, don´t getAs confused by compiler masturbations
          * and smart array functions, they will boil down to something much
          * worse if you look behind the curtain.
          */

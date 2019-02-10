@@ -5,7 +5,7 @@
  * September 2018
  */
 
-import { IConnection }            from "mysql";
+import { Connection }             from "mysql";
 import { ISqlDataModel }          from "./sql-table-data";
 import { SQLTableData }           from "./sql-table-data";
 import { SQLTableDataRow }        from "./sql-table-data-row";
@@ -13,12 +13,14 @@ import { isUndefined }            from "util";
 
 export interface IDbResult {
 	success: boolean;
+	error: Error;
 	lastInsertId: number;
 	affectedRows: number;
 	result: ISqlDataModel;
 	rawObj: {};
 	safeGetFirstRow(): SQLTableDataRow;
 	haveAny(): boolean;
+	setError(err: Error);
 }
 
 export class DbResult implements IDbResult {
@@ -41,7 +43,6 @@ export class DbResult implements IDbResult {
 	public haveAny(): boolean {
 		return this.result.rowCount() > 0;
 	}
-
 
 	/**
 	 * Store a raw JavaScript object representation of the data
@@ -84,4 +85,12 @@ export class DbResult implements IDbResult {
 
 		return tableDataRow;
 	}
+
+	public setError(err: Error): void {
+		if (err !== null) {
+			this.error = err;
+			this.success = false;
+		}
+	}
+
 }

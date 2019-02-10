@@ -13,5 +13,4 @@ export class DbLogger {
 		else
 			log(this.error(errorMessage), error);
 	}
-
 }
