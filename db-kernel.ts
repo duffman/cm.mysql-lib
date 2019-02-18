@@ -4,7 +4,7 @@
  * Proprietary and confidential
  */
 
-import { Settings }               from "@app/zappy.app.settings";
+import { Settings }               from "@app/app.settings";
 import * as mysql                 from "mysql";
 import { DataSheet }              from "./data-containers/data-sheet";
 import { SQLTableData }           from "./sql-table-data";
