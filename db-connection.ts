@@ -4,8 +4,8 @@
  * Proprietary and confidential
  */
 
-import {Connection} from 'mysql';
-import {IConnectionSettings} from '@putteDb/db-kernel';
+import { Connection }             from 'mysql';
+import { IConnectionSettings }    from './db-kernel';
 
 /**
  Wrapped MySQL Connection with auto connect

@@ -4,14 +4,13 @@
  * Proprietary and confidential
  */
 
-import { Settings }               from "@app/app.settings";
 import * as mysql                 from "mysql";
-import { DataSheet }              from "./data-containers/data-sheet";
 import { SQLTableData }           from "./sql-table-data";
 import { IDbResult }              from "./db-result";
 import { DbResult }               from "./db-result";
 import { DbLogger }               from "./db-logger";
 import { Connection }             from 'mysql';
+import { DbResultParser } from "@db/db-result-parser";
 
 const log = console.log;
 
@@ -39,18 +38,19 @@ enum DbState {
 	Disconnected
 }
 
-export interface IQuerySheetCallback {
-	(sheet: DataSheet);
+export interface IDbKernel {
+	createConnection(openConnection: boolean = true): Connection;
+	dbQuery(sql: string): Promise<IDbResult>;
 }
 
-export class DbManager {
+export class DbKernel implements IDbKernel {
+	private connSettings: IConnectionSettings;
 	private connLost: boolean = false;
 
-	constructor (public dbHost: string = Settings.Database.dbHost,
-				 public dbUser: string = Settings.Database.dbUser,
-				 public dbPass: string = Settings.Database.dbPass,
-				 public dbName: string = Settings.Database.dbName,
-				 public tag: string = "NO_TAG") {
+	constructor() {}
+
+	public assignSettings(settings: IConnectionSettings): void {
+		this.connSettings = settings;
 	}
 
 	public createConnection(openConnection: boolean = true): Connection {
@@ -58,10 +58,10 @@ export class DbManager {
 
 		try {
 			conn = mysql.createConnection({
-				host: this.dbHost,
-				user: this.dbUser,
-				password: this.dbPass,
-				database: this.dbName
+				host: this.connSettings.host,
+				user: this.connSettings.user,
+				password: this.connSettings.password,
+				database: this.connSettings.database
 			});
 
 			conn.on("error", (err) => {
@@ -84,56 +84,7 @@ export class DbManager {
 		return conn;
 	}
 
-
-	public static escape(value: string): string {
-		if (value === null || value === undefined) {
-			value = '';
-		}
-
-		value = value.replace('"', '\"');
-		value = value.replace("'", '\"');
-		return value;
-	}
-
-	private parseMysqlQueryResult(error, result, tableFields): Promise<IDbResult> {
-		return new Promise((resolve, reject) => {
-			let queryResult = new DbResult();
-
-			if (error) {
-				queryResult.success = false;
-				queryResult.error = error;
-				let customError = error;
-
-				//error code 1292
-
-				if (error.errno === 'ECONNREFUSED') {
-					customError = new Error("ECONNREFUSED");
-				}
-				if (error.errno == 1062) {
-					customError = new Error("DUP_ENTRY");
-				} else {
-					DbLogger.logErrorMessage("dbQuery :: Error ::", error.errno);
-				}
-
-				reject(customError);
-				//resolve(queryResult);
-
-			} else {
-				queryResult.affectedRows = result.affectedRows;
-				queryResult.lastInsertId = result.insertId;
-
-				let data = new SQLTableData();
-				data.parseResultSet(result, tableFields).then((res) => {
-					queryResult.result = res;
-					resolve(queryResult);
-				}).catch((err) => {
-					reject(err);
-				});
-			}
-		});
-	}
-
-	public runInTransaction(sql: string): Promise<IDbResult> {
+	public executeTransaction(sql: string): Promise<IDbResult> {
 		let scope = this;
 		let subConn = this.createConnection();
 		let result: IDbResult;
@@ -268,7 +219,7 @@ export class DbManager {
 					reject(error);
 
 				} else {
-					return this.parseMysqlQueryResult(error, result, tableFields).then((res) => {
+					return DbResultParser.parseQueryResult(error, result, tableFields).then((res) => {
 						if (error) {
 							console.log("FET ERROR ::", error);
 							throw error;
