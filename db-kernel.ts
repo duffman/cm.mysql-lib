@@ -8,9 +8,9 @@ import * as mysql                 from "mysql";
 import { SQLTableData }           from "./sql-table-data";
 import { IDbResult }              from "./db-result";
 import { DbResult }               from "./db-result";
-import { DbLogger }               from "./db-logger";
+import { DBLogger }               from "./db-logger";
 import { Connection }             from 'mysql';
-import { DbResultParser } from "@db/db-result-parser";
+import { DbResultParser }         from "./db-result-parser";
 
 const log = console.log;
 
@@ -38,12 +38,12 @@ enum DbState {
 	Disconnected
 }
 
-export interface IDbKernel {
-	createConnection(openConnection: boolean = true): Connection;
+export interface IDBKernel {
+	createConnection(openConnection: boolean): Connection;
 	dbQuery(sql: string): Promise<IDbResult>;
 }
 
-export class DbKernel implements IDbKernel {
+export class DBKernel implements IDBKernel {
 	private connSettings: IConnectionSettings;
 	private connLost: boolean = false;
 
@@ -106,7 +106,7 @@ export class DbKernel implements IDbKernel {
 		function executeSql(sql: string): Promise<IDbResult> {
 			return new Promise((resolve, reject) => {
 				subConn.query(sql, (error, result, tableFields) => {
-					scope.parseMysqlQueryResult(error, result, tableFields).then((res) => {
+					DbResultParser.parseQueryResult(error, result, tableFields).then((res) => {
 						resolve(res);
 					}).catch((err) => {
 						reject(err);

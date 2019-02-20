@@ -5,10 +5,10 @@
  * February 2019
  */
 
-import { IDbResult }              from "@db/db-result";
-import { DbResult }               from "@db/db-result";
-import { DbLogger }               from "@db/db-logger";
-import { SQLTableData }           from "@db/sql-table-data";
+import { IDbResult }              from "./db-result";
+import { DbResult }               from "./db-result";
+import { DBLogger }               from "./db-logger";
+import { SQLTableData }           from "./sql-table-data";
 
 export class DbResultParser {
 	public static parseQueryResult(error, result, tableFields): Promise<IDbResult> {
@@ -28,10 +28,11 @@ export class DbResultParser {
 				if (error.errno == 1062) {
 					customError = new Error("DUP_ENTRY");
 				} else {
-					DbLogger.logErrorMessage("dbQuery :: Error ::", error.errno);
+					DBLogger.logErrorMessage("dbQuery :: Error ::", error.errno);
 				}
 
 				reject(customError);
+
 			} else {
 				queryResult.affectedRows = result.affectedRows;
 				queryResult.lastInsertId = result.insertId;
