@@ -4,6 +4,7 @@
  * Proprietary and confidential
  */
 
+import { injectable }             from 'inversify';
 import * as mysql                 from "mysql";
 import { SQLTableData }           from "./sql-table-data";
 import { IDbResult }              from "./db-result";
@@ -11,6 +12,7 @@ import { DbResult }               from "./db-result";
 import { DBLogger }               from "./db-logger";
 import { Connection }             from 'mysql';
 import { DbResultParser }         from "./db-result-parser";
+import {Settings} from '@app/app.settings';
 
 const log = console.log;
 
@@ -43,11 +45,21 @@ export interface IDBKernel {
 	dbQuery(sql: string): Promise<IDbResult>;
 }
 
+@injectable()
 export class DBKernel implements IDBKernel {
 	private connSettings: IConnectionSettings;
 	private connLost: boolean = false;
 
-	constructor() {}
+	constructor() {
+		this.connSettings = {
+			host: Settings.Database.dbHost,
+			user: Settings.Database.dbUser,
+			password: Settings.Database.dbPass,
+			database: Settings.Database.dbName
+		};
+
+		console.log("DB SETTINGS ::", this.connSettings);
+	}
 
 	public assignSettings(settings: IConnectionSettings): void {
 		this.connSettings = settings;
