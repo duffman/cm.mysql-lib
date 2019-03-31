@@ -58,7 +58,7 @@ export class DBKernel implements IDBKernel {
 			database: Settings.Database.dbName
 		};
 
-		console.log("DB SETTINGS ::", this.connSettings);
+		//console.log("DB SETTINGS ::", this.connSettings);
 	}
 
 	public assignSettings(settings: IConnectionSettings): void {
