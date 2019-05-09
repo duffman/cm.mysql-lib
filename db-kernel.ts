@@ -164,8 +164,8 @@ export class DBKernel implements IDBKernel {
 				result = await executeSql(sql);
 				await commit();
 
-			} catch(err) {
-				let transError  = err != null ? err : new Error("SQL Execution failed");
+			} catch (err) {
+				let transError = err != null ? err : new Error("SQL Execution failed");
 				executeError = transError;
 			}
 
@@ -221,7 +221,7 @@ export class DBKernel implements IDBKernel {
 			}
 
 			conn.query(sql, (error, result, tableFields) => {
-				if (error)  {
+				if (error) {
 					console.log("dbQuery ERROR ::", error);
 					if (error.fatal) {
 						console.trace('fatal error: ' + error.message);
@@ -248,6 +248,16 @@ export class DBKernel implements IDBKernel {
 						reject(err);
 					});
 				}
+			});
+		});
+	}
+
+	public runQuery(sql: string): Promise<boolean> {
+		return new Promise((resolve, reject) => {
+			this.dbQuery(sql).then(res => {
+				resolve(res.success);
+			}).catch(err => {
+				reject(err);
 			});
 		});
 	}
