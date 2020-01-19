@@ -1,2 +1,2 @@
-# Putte Node DB
-Simple wrapper and helper classes for MySQL Data Access
+# TS MySQL Library
+MySQL Data Access
